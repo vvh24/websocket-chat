@@ -12,6 +12,11 @@ const PORT = process.env.PORT || 3001; // Changed port to 3001
 // Keep track of connected users (socket.id -> username)
 const users = {};
 
+// Function to get list of usernames
+function getUserList() {
+  return Object.values(users);
+}
+
 // --- ASYNC/PROMISE Demonstration ---
 /**
  * Simulates fetching a welcome message asynchronously.
@@ -60,6 +65,9 @@ io.on('connection', async (socket) => {
     // Broadcast to *other* users that this user has joined
     // `.broadcast` sends to everyone *except* the current socket
     socket.broadcast.emit('system message', `${username} has joined the chat!`);
+    
+    // Send the updated user list to ALL clients
+    io.emit('user list update', getUserList());
 
     // --- ASYNC/AWAIT Demonstration ---
     try {
@@ -101,6 +109,9 @@ io.on('connection', async (socket) => {
       // Broadcast to other users that this user has left
       socket.broadcast.emit('system message', `${username} has left the chat.`);
       delete users[socket.id]; // Remove user from our tracking object
+      
+      // Send the updated user list to ALL clients
+      io.emit('user list update', getUserList());
     } else {
         console.log(`❌ User ${socket.id} (no username set) disconnected`);
     }

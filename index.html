@@ -3,22 +3,34 @@
 <head>
     <title>Simple WebSocket Chat</title>
     <style>
-        body { margin: 0; padding-bottom: 3rem; font-family: sans-serif; }
-        #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
+        body { margin: 0; padding-bottom: 3rem; font-family: sans-serif; display: flex; }
+        #chat-container { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; }
+        #user-list-container { width: 200px; background: #f0f0f0; padding: 1rem; border-right: 1px solid #ccc; }
+        #user-list-title { font-weight: bold; margin-bottom: 0.5rem; }
+        #user-list { list-style-type: none; padding: 0; margin: 0; }
+        #user-list li { padding: 0.25rem 0; }
+        #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 200px; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
         #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; }
         #input:focus { outline: none; }
         #form > button { background: #333; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
-        #messages { list-style-type: none; margin: 0; padding: 0; }
+        #messages { list-style-type: none; margin: 0; padding: 0; overflow-y: auto; flex-grow: 1; }
         #messages > li { padding: 0.5rem 1rem; }
         #messages > li:nth-child(odd) { background: #efefef; }
+        #typing-indicator { padding: 0.5rem 1rem; font-style: italic; color: gray; }
     </style>
 </head>
 <body>
-    <ul id="messages"></ul>
-    <div id="typing-indicator" style="padding: 0.5rem 1rem; font-style: italic; color: gray;"></div>
-    <form id="form" action="">
-        <input id="input" autocomplete="off" /><button>Send</button>
-    </form>
+    <div id="user-list-container">
+        <div id="user-list-title">Online Users</div>
+        <ul id="user-list"></ul>
+    </div>
+    <div id="chat-container">
+        <ul id="messages"></ul>
+        <div id="typing-indicator"></div>
+        <form id="form" action="">
+            <input id="input" autocomplete="off" /><button>Send</button>
+        </form>
+    </div>
 
     <!-- Include the Socket.IO client library -->
     <script src="/socket.io/socket.io.js"></script>
@@ -32,16 +44,27 @@
         const input = document.getElementById('input');
         const messages = document.getElementById('messages');
         const typingIndicator = document.getElementById('typing-indicator');
+        const userList = document.getElementById('user-list');
         let typingTimer;
         const TYPING_TIMEOUT = 1000; // 1 second
 
         // --- Get Username ---
         function getUsername() {
-            username = prompt("Please enter your username:");
-            if (!username || username.trim() === '') {
+            // Clear any previous username
+            username = '';
+            
+            // Show prompt
+            let promptedUsername = prompt("Please enter your username:");
+            
+            // Handle empty or null response
+            if (!promptedUsername || promptedUsername.trim() === '') {
                 username = `User_${Math.random().toString(36).substring(2, 7)}`;
                 alert(`No username entered. Assigned: ${username}`);
+            } else {
+                username = promptedUsername.trim();
             }
+            
+            console.log("Setting username:", username);
             socket.emit('set username', username); // Send username to server
         }
 
@@ -71,6 +94,22 @@
 
         socket.on('user stopped typing', function() {
             typingIndicator.textContent = '';
+        });
+
+        // --- User List Updates ---
+        socket.on('user list update', function(users) {
+            // Clear the current list
+            userList.innerHTML = '';
+            
+            // Add each user to the list
+            users.forEach(user => {
+                const item = document.createElement('li');
+                item.textContent = user;
+                if (user === username) {
+                    item.style.fontWeight = 'bold'; // Highlight current user
+                }
+                userList.appendChild(item);
+            });
         });
 
         // --- Sending Messages ---
