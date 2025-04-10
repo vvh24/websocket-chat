@@ -77,6 +77,20 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // Listen for typing events
+  socket.on('typing', () => {
+    const username = users[socket.id];
+    if (username) {
+        // Broadcast to everyone except sender
+        socket.broadcast.emit('user typing', username);
+    }
+  });
+
+  // Listen for stop typing events
+  socket.on('stop typing', () => {
+    // Broadcast to everyone except sender
+    socket.broadcast.emit('user stopped typing');
+  });
 
   // Listen for 'disconnect' events
   // ANONYMOUS FUNCTION CALLBACK

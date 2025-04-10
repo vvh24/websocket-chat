@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -16,6 +15,7 @@
 </head>
 <body>
     <ul id="messages"></ul>
+    <div id="typing-indicator" style="padding: 0.5rem 1rem; font-style: italic; color: gray;"></div>
     <form id="form" action="">
         <input id="input" autocomplete="off" /><button>Send</button>
     </form>
@@ -31,6 +31,9 @@
         const form = document.getElementById('form');
         const input = document.getElementById('input');
         const messages = document.getElementById('messages');
+        const typingIndicator = document.getElementById('typing-indicator');
+        let typingTimer;
+        const TYPING_TIMEOUT = 1000; // 1 second
 
         // --- Get Username ---
         function getUsername() {
@@ -42,6 +45,34 @@
             socket.emit('set username', username); // Send username to server
         }
 
+        // --- Typing Indicator ---
+        input.addEventListener('input', function() {
+            if (input.value.length > 0) {
+                // Clear any existing timer
+                clearTimeout(typingTimer);
+                // Emit typing event
+                socket.emit('typing');
+                
+                // Set a timer to emit stop typing after a delay
+                typingTimer = setTimeout(() => {
+                    socket.emit('stop typing');
+                }, TYPING_TIMEOUT);
+            } else {
+                // If input is empty, stop typing immediately
+                clearTimeout(typingTimer);
+                socket.emit('stop typing');
+            }
+        });
+
+        // Listen for typing events from server
+        socket.on('user typing', function(user) {
+            typingIndicator.textContent = `${user} is typing...`;
+        });
+
+        socket.on('user stopped typing', function() {
+            typingIndicator.textContent = '';
+        });
+
         // --- Sending Messages ---
         // Add an event listener for when the form is submitted
         form.addEventListener('submit', function(event) {
@@ -50,6 +81,10 @@
                 // Emit a 'chat message' event to the server with the input value
                 socket.emit('chat message', input.value);
                 input.value = ''; // Clear the input field
+                
+                // Clear typing status
+                clearTimeout(typingTimer);
+                socket.emit('stop typing');
             }
         });
 
