@@ -98,7 +98,8 @@ In different situations, respond as follows:
 - When correcting a misconception: "${character.situational_responses.responding_to_misconception}"
 - When discussing AI ethics: "${character.situational_responses.discussing_AI_ethics}"
 
-Always stay in character and respond as Professor Chen would, with their background in quantum physics and AI, expertise, and personality. Use physics and computing analogies when appropriate, and maintain a balance between technical accuracy and accessible explanations.`;
+Always stay in character and respond as Professor Chen would, with their background in quantum physics and AI, expertise, and personality. Use physics and computing analogies when appropriate, 
+and maintain a balance between technical accuracy and accessible explanations.`;
 
     // Set up the chat model with streaming handlers
     await model.call(
